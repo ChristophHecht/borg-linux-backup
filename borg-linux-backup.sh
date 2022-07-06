@@ -32,7 +32,7 @@ function f_mail {
 }
 
 function f_error {
-    f_print $1 "error"
+    f_log $1 "error"
     f_mail "error"
     f_cleanup
     exit $2
@@ -304,6 +304,25 @@ then
     fi
     f_log "Finished pruning borg repo"
 fi
+
+##DO COMPACT
+if [ $BACKUPMETHOD != "check" ] && [ $PRUNING = 1 ]
+then
+    f_log "Compacting borg repo."
+    $BORGLOCATION compact $BORGREPOSITORY 2>&1 >/dev/null | tee -a $LOGFILE
+    BORGERRORLEVEL=$PIPESTATUS
+    if [ $BORGERRORLEVEL -gt 1 ]
+    then
+        f_error "Error: borg returned $BORGERRORLEVEL."
+    fi
+    if [ $BORGERRORLEVEL -gt 0 ]
+    then
+        WARNING=1
+        f_error "Warning: borg returned $BORGERRORLEVEL."
+    fi
+    f_log "Finished compacting borg repo."
+fi
+
 
 ##FINISH
 if [ $WARNING = 1 ]
